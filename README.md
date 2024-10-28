@@ -1,1 +1,1 @@
-https://chessaifullstack.onrender.com/
+chess ai using javascript for inference
