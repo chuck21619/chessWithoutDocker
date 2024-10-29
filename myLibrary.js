@@ -1,4 +1,6 @@
 
+const pieces = { 'p': 0, 'n': 1, 'b': 2, 'r': 3, 'q': 4, 'k': 5, 'P': 6, 'N': 7, 'B': 8, 'R': 9, 'Q': 10, 'K': 11 };
+const files = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'};
 var board;
 var config = {
     position: 'start',
@@ -6,18 +8,14 @@ var config = {
     draggable: true
 }
 
-var something;
-
 function onLoad() {
     console.log('onLoad()');
     board = Chessboard('myBoard', config);
     document.getElementById("resetBoard").onclick = resetBoard;
-    something = "asdfsafdfasdfasdf";
 }
 
 function fenToOneHot() {
-    fen = board.fen()
-    const pieces = { 'p': 0, 'n': 1, 'b': 2, 'r': 3, 'q': 4, 'k': 5, 'P': 6, 'N': 7, 'B': 8, 'R': 9, 'Q': 10, 'K': 11 };
+    fen = board.fen();
     const boardArray = Array(64).fill(12); // 12 represents empty squares
 
     let rank = 7, file = 0;
@@ -40,7 +38,9 @@ function fenToOneHot() {
         oneHotSquare[boardArray[i]] = 1;
         oneHotBoard.push(...oneHotSquare);
     }
-    //TODO: APPENDTURNTTOENCODING
+    //TODO: handle both sides
+    //always assuming the computer is playing as black for now
+    oneHotBoard.push(0); // 0 is blacks turn, 1 is whites turn
     return oneHotBoard;
 }
 
@@ -49,9 +49,11 @@ async function generateMove() {
     input = tf.expandDims(state, axis = 0);
     const model = await tf.loadGraphModel('jsModel/model.json');
     output = model.predict(input);
+    
     outputArray = output.arraySync()[0];
     moveInteger = argmax(outputArray);
-    console.log(moveInteger);
+    data = output.dataSync();
+
     startingSquare = Math.floor(moveInteger / 64);
     endingSquare = moveInteger % 64;
     return [startingSquare, endingSquare];
@@ -87,17 +89,15 @@ function argmax(array) {
 }
 
 function resetBoard() {
-    //board.start();
-    move = generateMove().then(
-        function(value) {
-            console.log("starting square: ", value[0]);
-            console.log("starting square: ", value[1]);
-        },
-        function(error) {
-            console.log(error);
-            updateOutputMessage(error);
-        }
-    );
+    board.start();
+}
+
+function chessSquareFromInt(integerSquare) {
+
+    rank = Math.floor(integerSquare / 8);
+    fileInt = moveInteger % 8;
+    fileLetter = files[fileInt];
+    return fileLetter + rank.toString()
 }
 
 function updateOutputMessage(newMessage) {
@@ -110,5 +110,17 @@ function onDrop(source, target, piece, newPos, oldPos, orientation) {
         console.log("ignore drag drop - same position");
         return;
     }
-    console.log("dropped piece");
+    updateOutputMessage("calculating...")
+
+    move = generateMove().then(
+        function (value) {
+            moveString = chessSquareFromInt(value[0]) + "-" + chessSquareFromInt(value[1]);
+            updateOutputMessage(moveString);
+            board.move(moveString);
+        },
+        function (error) {
+            console.log(error);
+            updateOutputMessage(error);
+        }
+    );
 }
