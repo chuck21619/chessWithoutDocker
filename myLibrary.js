@@ -45,34 +45,25 @@ function fenToOneHot() {
 }
 
 async function generateMove() {
+    
     state = fenToOneHot();
     input = tf.expandDims(state, axis = 0);
     const model = await tf.loadGraphModel('jsModel/model.json');
     output = model.predict(input);
-    
     outputArray = output.arraySync()[0];
     moveInteger = argmax(outputArray);
     data = output.dataSync();
+    squares = squaresFromMoveInt(moveInteger);
+    return squares;
+}
 
+function squaresFromMoveInt(moveInteger) {
+    console.log(moveInteger);
     startingSquare = Math.floor(moveInteger / 64);
     endingSquare = moveInteger % 64;
-    return [startingSquare, endingSquare];
+    return [startingSquare, endingSquare]
 }
-
-function argmax(array) {
-    let maxIndex = 0;
-    let maxValue = array[0];
-
-    for (let i = 1; i < array.length; i++) {
-        console.log(i);
-        if (array[i] > maxValue) {
-            maxIndex = i;
-            maxValue = array[i];
-        }
-    }
-
-    return maxIndex;
-}
+    
 
 function argmax(array) {
     let maxIndex = 0;
@@ -80,8 +71,8 @@ function argmax(array) {
 
     for (let i = 1; i < array.length; i++) {
         if (array[i] > maxValue) {
-            maxValue = array[i];
             maxIndex = i;
+            maxValue = array[i];
         }
     }
 
@@ -93,9 +84,8 @@ function resetBoard() {
 }
 
 function chessSquareFromInt(integerSquare) {
-
-    rank = Math.floor(integerSquare / 8);
-    fileInt = moveInteger % 8;
+    rank = Math.floor(integerSquare / 8)+1;
+    fileInt = (integerSquare % 8);
     fileLetter = files[fileInt];
     return fileLetter + rank.toString()
 }
